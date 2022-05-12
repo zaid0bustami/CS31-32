@@ -40,6 +40,7 @@ int main()
 
     b.block();
     b.unblock();
+
     assert(b.placeShip(p2, 1, HORIZONTAL) == false);
     assert(b.placeShip(p1, 1, HORIZONTAL) == true);
     assert(b.placeShip(p3, 0, VERTICAL) == false);
@@ -81,8 +82,18 @@ int main()
     
     assert(b.allShipsDestroyed() == true);
 
-    b.display(true);
-    b.display(false);
+    Game g2(10, 10);
+    addStandardShips(g2);
+    Board b22(g2);
+    Player* mediocre = createPlayer("mediocre", "zaid", g2);
+    b22.display(false);
+    mediocre->placeShips(b22);
+    b22.display(false);
+
+    delete mediocre;
+
+    //b.display(true);
+    //b.display(false);
 
     /*const int NTRIALS = 10;
 

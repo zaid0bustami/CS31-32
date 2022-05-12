@@ -38,13 +38,16 @@ void BoardImpl::clear()
 
 void BoardImpl::block()
 {
-      // Block cells with 50% probability
-    for (int r = 0; r < m_game.rows(); r++)
-        for (int c = 0; c < m_game.cols(); c++)
-            if (randInt(2) == 0)
-            {
-                m_board[r][c] = '#';
-            }
+    // Randomly block half of all cells
+    for (int cell = 0; cell < (m_game.rows() * m_game.cols()) / 2; cell++)
+    {
+        int r = randInt(m_game.rows());
+        int c = randInt(m_game.cols());
+        if (m_board[r][c] != '#')
+            m_board[r][c] = '#';
+        else
+            cell--;
+    }
 }
 
 void BoardImpl::unblock()
@@ -141,7 +144,6 @@ bool BoardImpl::unplaceShip(Point topOrLeft, int shipId, Direction dir)
 
 void BoardImpl::display(bool shotsOnly) const
 {
-    // This compiles, but may not be correct
     cout << ' ' << ' ';
     for (int c = 0; c < m_game.cols(); c++)
     {

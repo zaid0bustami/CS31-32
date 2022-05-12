@@ -32,9 +32,8 @@ private:
         int length;
         char symbol;
         string name;
-        bool placed = false;
     };
-    vector<Ship> m_ships;
+    vector<Ship> m_ships;  //make into a vector of pointers
 };
 
 void waitForEnter()
