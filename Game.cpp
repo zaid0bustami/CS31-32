@@ -33,7 +33,7 @@ private:
         char symbol;
         string name;
     };
-    vector<Ship> m_ships;  //make into a vector of pointers
+    vector<Ship> m_ships;  //make into a vector of pointers?
 };
 
 void waitForEnter()
@@ -97,7 +97,113 @@ string GameImpl::shipName(int shipId) const
 
 Player* GameImpl::play(Player* p1, Player* p2, Board& b1, Board& b2, bool shouldPause)
 {
-    return nullptr;  // This compiles but may not be correct
+    //place all ships
+    if (!p1->placeShips(b1) || !p2->placeShips(b2))
+        return nullptr;
+
+    //initialize variables
+    Point p;
+    bool validShot = false;
+    bool shotHit = false;
+    bool shipDestroyed = false;
+    int shipId;
+
+    //play the game
+    for (;;)
+    {
+        //p1 attacks p2's board
+        cout << p1->name() << "'s turn. Board for " << p2->name() << ": " << endl;
+        if (p1->isHuman())
+            b2.display(true);
+        else
+            b2.display(false);
+        p = p1->recommendAttack();
+        validShot = b2.attack(p, shotHit, shipDestroyed, shipId);
+        p1->recordAttackResult(p, validShot, shotHit, shipDestroyed, shipId);
+        p2->recordAttackByOpponent(p);
+        cout << p1->name();
+        if (!validShot)
+            cout << " wasted a shot at (" << p.r << "," << p.c << ")." << endl;
+        else
+        {
+            cout << " attacked (" << p.r << "," << p.c << ") and ";
+            if (!shotHit)
+                cout << "missed";
+            else if (!shipDestroyed)
+                cout << "hit something";
+            else
+                cout << "destroyed the " << shipName(shipId);
+            cout << ", resulting in:" << endl;
+        }
+        if (p1->isHuman())
+            b2.display(true);
+        else
+            b2.display(false);
+        if (b2.allShipsDestroyed())
+        {
+            cout << "Winner: " << p1->name() << endl;
+            if (p2->isHuman())
+            {
+                cout << p1->name() << "'s board: " << endl;
+                b1.display(false);
+            }
+            return p1;
+        }
+
+        if (shouldPause)
+        {
+            cout << "Press enter to continue: ";
+            string s;
+            getline(cin, s);
+        }
+
+        //p2 attacks p1's board
+        cout << p2->name() << "'s turn. Board for " << p1->name() << ": " << endl;
+        if (p2->isHuman())
+            b1.display(true);
+        else
+            b1.display(false);
+        p = p2->recommendAttack();
+        validShot = b1.attack(p, shotHit, shipDestroyed, shipId);
+        p2->recordAttackResult(p, validShot, shotHit, shipDestroyed, shipId);
+        p1->recordAttackByOpponent(p);
+        cout << p2->name();
+        if (!validShot)
+            cout << " wasted a shot at (" << p.r << "," << p.c << ")." << endl;
+        else
+        {
+            cout << " attacked (" << p.r << "," << p.c << ") and ";
+            if (!shotHit)
+                cout << "missed";
+            else if (!shipDestroyed)
+                cout << "hit something";
+            else
+                cout << "destroyed the " << shipName(shipId);
+            cout << ", resulting in:" << endl;
+        }
+        if (p2->isHuman())
+            b1.display(true);
+        else
+            b1.display(false);
+        if (b1.allShipsDestroyed())
+        {
+            cout << "Winner: " << p2->name() << endl;
+            if (p1->isHuman())
+            {
+                cout << p2->name() << "'s board: " << endl;
+                b2.display(false);
+            }
+            return p1;
+        }
+
+        if (shouldPause)
+        {
+            cout << "Press enter to continue: ";
+            string s;
+            getline(cin, s);
+        }
+    }
+    //return nullptr;
 }
 
 //******************** Game functions *******************************

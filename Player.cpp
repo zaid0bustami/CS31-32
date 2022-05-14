@@ -89,8 +89,6 @@ public:
     virtual void recordAttackByOpponent(Point p);
     virtual Point recommendAttack();
     virtual void recordAttackResult(Point p, bool validShot, bool shotHit, bool shipDestroyed, int shipId);
-private:
-    
 };
 
 HumanPlayer::HumanPlayer(string nm, const Game& g)
@@ -99,14 +97,48 @@ HumanPlayer::HumanPlayer(string nm, const Game& g)
 
 bool HumanPlayer::placeShips(Board& b)
 {
+    cout << name() << " must place " << game().nShips() << " ships." << endl;
     for (int i = 0; i < game().nShips(); i++)
     {
+        b.display(false);
+
+        Direction dir;
+        string dirStr;
+        for (;;)
+        {
+            cout << "Enter h or v for direction of " << game().shipName(i) << " (length " << game().shipLength(i) << "): ";
+            getline(cin, dirStr);
+            if (dirStr[0] == 'h')
+            {
+                dir = HORIZONTAL;
+                break;
+            }
+            else if (dirStr[0] == 'v')
+            {
+                dir = VERTICAL;
+                break;
+            }
+            else
+                cout << "Direction must be h or v." << endl;
+        }
+
         int r = 0, c = 0;
-        getLineWithTwoIntegers(r, c);
-        Point p(r, c);
-        b.placeShip(p, i, dir);
+        for (;;)
+        {
+            cout << "Enter row and column of leftmost cell (e.g., 3 5): ";
+            if (getLineWithTwoIntegers(r, c))
+            {
+                Point p(r, c);
+                if (b.placeShip(p, i, dir))
+                    break;
+                else
+                    cout << "The ship can not be placed there." << endl;
+            }
+            else
+                cout << "You must enter two integers." << endl;
+        }        
     }
-    return false;
+    return true;
 }
 
 void HumanPlayer::recordAttackByOpponent(Point p)
@@ -116,9 +148,18 @@ void HumanPlayer::recordAttackByOpponent(Point p)
 
 Point HumanPlayer::recommendAttack()
 {
-    Point p(0, 0);
-    return p;
-    //getLineWithTwoIntegers
+    int r = 0, c = 0;
+    for (;;)
+    {
+        cout << "Enter the row and column to attack (e.g., 3 5): ";
+        if (getLineWithTwoIntegers(r, c))
+        {
+            Point p(r, c);
+            return p;
+        }
+        else
+            cout << "You must enter two integers." << endl;
+    }
 }
 
 void HumanPlayer::recordAttackResult(Point p, bool validShot, bool shotHit, bool shipDestroyed, int shipId)
@@ -139,15 +180,16 @@ public:
     virtual void recordAttackByOpponent(Point p);
     virtual Point recommendAttack();
     virtual void recordAttackResult(Point p, bool validShot, bool shotHit, bool shipDestroyed, int shipId);
+    bool attackedBefore(const Point& p);
 private:
-    vector<Point> m_attacks; //make into a vector of pointers
+    vector<Point> m_attacks;
     struct lastAttack
     {
         Point p;
         Point hitP;
-        bool validShot;
-        bool shotHit;
-        bool shipDestroyed;
+        bool validShot = false;
+        bool shotHit = false;
+        bool shipDestroyed = false;
         int shipId;
     };
     lastAttack m_lastAttack;
@@ -202,6 +244,16 @@ void MediocrePlayer::recordAttackByOpponent(Point p)
     //nothing happens
 }
 
+bool MediocrePlayer::attackedBefore(const Point& p)
+{
+    for (int i = 0; i < m_attacks.size(); i++)
+    {
+        if (m_attacks.at(i).r == p.r && m_attacks.at(i).c == p.c)
+            return true;
+    }
+    return false;
+}
+
 Point MediocrePlayer::recommendAttack()
 {   
     for (;;)
@@ -209,62 +261,27 @@ Point MediocrePlayer::recommendAttack()
         while (m_state == 1)
         {
             Point p = game().randomPoint();
-            if (find(m_attacks.begin(), m_attacks.end(), p) == m_attacks.end()) //test that the point hasn't been attacked before
+            if (!attackedBefore(p)) //test that the point hasn't been attacked before
                 m_attacks.push_back(p);
             else
                 continue;
-            if (m_lastAttack.validShot && !m_lastAttack.shotHit) //if the attack was valid but missed
-                return p;
-            else if (m_lastAttack.validShot && m_lastAttack.shotHit && m_lastAttack.shipDestroyed) //if the attack was valid and destroyed a ship
-                return p;
-            else if (m_lastAttack.validShot && m_lastAttack.shotHit && !m_lastAttack.shipDestroyed) //if the attack was valid and hit but didn't destroy a ship
-            {
-                m_attacks.pop_back();
-                m_lastAttack.hitP = p;
-                m_state = 2;
-            }
+            return p;
         }
         while (m_state == 2)
         {
-            
-            
-            for (int i = 0; i < game().nShips(); i++) //check to see if the cross is filled for games with ships size >= 6
-            {
-                if (game().shipLength(i) <= 5)
-                    continue;
-                else
-                {
-                    for (int r = m_lastAttack.hitP.r - 4; r < m_lastAttack.hitP.r + 5; r++)
-                    {
-                        Point p(r, m_lastAttack.hitP.c);
-                        if (find(m_attacks.begin(), m_attacks.end(), p) == m_attacks.end())
-                            ;//NOOOTTT DONEEEEE YEEETTTTTTT
-                    }
-                    for (int c = m_lastAttack.hitP.c - 4; c < m_lastAttack.hitP.c + 5; c++)
-                    {
-                        ;
-                    }
-                }
-            }
-            
-                
-                
-            int r = (m_lastAttack.hitP.r - 4) + randInt(9);
-            int c = (m_lastAttack.hitP.c - 4) + randInt(9);
+            int r = m_lastAttack.hitP.r;
+            int c = m_lastAttack.hitP.c;
+            int d = randInt(2);
+            if (d == 0)
+                c = (m_lastAttack.hitP.c - 4) + randInt(9);
+            else
+                r = (m_lastAttack.hitP.r - 4) + randInt(9);
             Point p(r, c);
-            if (game().isValid(p) && find(m_attacks.begin(), m_attacks.end(), p) == m_attacks.end()) //test the point's valid and it hasn't been attacked before
+            if (game().isValid(p) && !attackedBefore(p)) //test the point's valid and it hasn't been attacked before
                 m_attacks.push_back(p);
             else
                 continue;
-            if (m_lastAttack.validShot && !m_lastAttack.shotHit) //if the attack was valid but missed
-                return p;
-            else if (m_lastAttack.validShot && m_lastAttack.shotHit && !m_lastAttack.shipDestroyed) //if the attack was valid and destroyed a ship
-                return p;
-            else if (m_lastAttack.validShot && m_lastAttack.shotHit && m_lastAttack.shipDestroyed) //if the attack was valid and hit but didn't destroy a ship
-            {
-                m_attacks.pop_back();
-                m_state = 1;
-            }
+            return p;
         }
     }
 }
@@ -276,15 +293,217 @@ void MediocrePlayer::recordAttackResult(Point p, bool validShot, bool shotHit, b
     m_lastAttack.shotHit = shotHit;
     m_lastAttack.shipDestroyed = shipDestroyed;
     m_lastAttack.shipId = shipId;
+    
+    if (m_state == 1)
+    {
+        if (m_lastAttack.validShot && !m_lastAttack.shotHit) //if the attack was valid but missed
+            m_state = 1;
+        else if (m_lastAttack.validShot && m_lastAttack.shotHit && m_lastAttack.shipDestroyed) //if the attack was valid and destroyed a ship
+            m_state = 1;
+        else if (m_lastAttack.validShot && m_lastAttack.shotHit && !m_lastAttack.shipDestroyed) //if the attack was valid and hit but didn't destroy a ship
+        {
+            m_lastAttack.hitP = m_lastAttack.p;
+            m_state = 2;
+        }
+    }
+    else if (m_state == 2)
+    {
+        if (m_lastAttack.validShot && !m_lastAttack.shotHit) //if the attack was valid but missed
+            m_state = 2;
+        else if (m_lastAttack.validShot && m_lastAttack.shotHit && !m_lastAttack.shipDestroyed) //if the attack was valid and destroyed a ship
+            m_state = 2;
+        else if (m_lastAttack.validShot && m_lastAttack.shotHit && m_lastAttack.shipDestroyed) //if the attack was valid and hit but didn't destroy a ship
+        {
+            m_state = 1;
+            return;
+        }
+        
+        int counter = 0; //counts how many empty cells in the cross are left
+        for (int r = m_lastAttack.hitP.r - 4; r < m_lastAttack.hitP.r + 5; r++) //check if the entire cross has been attacked
+        {
+            Point p(r, m_lastAttack.hitP.c);
+            if (game().isValid(p) && !attackedBefore(p)) //if the point hasn't been attacked
+                counter++;
+        }
+        for (int c = m_lastAttack.hitP.c - 4; c < m_lastAttack.hitP.c + 5; c++)
+        {
+            Point p(m_lastAttack.hitP.r, c);
+            if (game().isValid(p) && !attackedBefore(p)) //if the point hasn't been attacked
+                counter++;
+        }
+        if (counter == 0)
+            m_state = 1;
+    }
 }
 
 //*********************************************************************
 //  GoodPlayer
 //*********************************************************************
 
-// TODO:  You need to replace this with a real class declaration and
-//        implementation.
-typedef AwfulPlayer GoodPlayer;
+class GoodPlayer : public Player
+{
+public:
+    GoodPlayer(string nm, const Game& g);
+    virtual bool placeShips(Board& b);
+    bool placeShips(Board& b, int nShips);
+    virtual void recordAttackByOpponent(Point p);
+    virtual Point recommendAttack();
+    virtual void recordAttackResult(Point p, bool validShot, bool shotHit, bool shipDestroyed, int shipId);
+    bool attackedBefore(const Point& p);
+private:
+    vector<Point> m_attacks;
+    struct lastAttack
+    {
+        Point p;
+        Point hitP;
+        bool validShot = false;
+        bool shotHit = false;
+        bool shipDestroyed = false;
+        int shipId;
+    };
+    lastAttack m_lastAttack;
+    int m_state = 1;
+};
+
+GoodPlayer::GoodPlayer(string nm, const Game& g)
+    : Player(nm, g)
+{}
+
+bool GoodPlayer::placeShips(Board& b, int shipId)
+{
+    if (shipId == game().nShips()) //base case - if all the ships have been placed
+        return true;
+    for (int r = 0; r != game().rows(); r++)
+    {
+        for (int c = 0; c != game().cols(); c++)
+        {
+            Point p(r, c);
+            if (b.placeShip(p, shipId, VERTICAL))
+                if (placeShips(b, shipId + 1))
+                    return true;
+                else
+                    b.unplaceShip(p, shipId, VERTICAL);
+            if (b.placeShip(p, shipId, HORIZONTAL))
+                if (placeShips(b, shipId + 1))
+                    return true;
+                else
+                    b.unplaceShip(p, shipId, HORIZONTAL);
+        }
+    }
+    return false;
+}
+
+bool GoodPlayer::placeShips(Board& b)
+{
+    b.block();
+    for (int i = 0; i < 50; i++)
+    {
+        if (placeShips(b, 0))
+        {
+            b.unblock();
+            return true;
+        }
+    }
+    b.unblock();
+    return false;
+}
+
+void GoodPlayer::recordAttackByOpponent(Point p)
+{
+
+}
+
+bool GoodPlayer::attackedBefore(const Point& p)
+{
+    for (int i = 0; i < m_attacks.size(); i++)
+    {
+        if (m_attacks.at(i).r == p.r && m_attacks.at(i).c == p.c)
+            return true;
+    }
+    return false;
+}
+
+Point GoodPlayer::recommendAttack()
+{
+    for (;;)
+    {
+        while (m_state == 1)
+        {
+            Point p = game().randomPoint();
+            if (!attackedBefore(p)) //test that the point hasn't been attacked before
+                m_attacks.push_back(p);
+            else
+                continue;
+            return p;
+        }
+        while (m_state == 2)
+        {
+            int r = m_lastAttack.hitP.r;
+            int c = m_lastAttack.hitP.c;
+            int d = randInt(2);
+            if (d == 0)
+                c = (m_lastAttack.hitP.c - 4) + randInt(9);
+            else
+                r = (m_lastAttack.hitP.r - 4) + randInt(9);
+            Point p(r, c);
+            if (game().isValid(p) && !attackedBefore(p)) //test the point's valid and it hasn't been attacked before
+                m_attacks.push_back(p);
+            else
+                continue;
+            return p;
+        }
+    }
+}
+
+void GoodPlayer::recordAttackResult(Point p, bool validShot, bool shotHit, bool shipDestroyed, int shipId)
+{
+    m_lastAttack.p = p;
+    m_lastAttack.validShot = validShot;
+    m_lastAttack.shotHit = shotHit;
+    m_lastAttack.shipDestroyed = shipDestroyed;
+    m_lastAttack.shipId = shipId;
+
+    if (m_state == 1)
+    {
+        if (m_lastAttack.validShot && !m_lastAttack.shotHit) //if the attack was valid but missed
+            m_state = 1;
+        else if (m_lastAttack.validShot && m_lastAttack.shotHit && m_lastAttack.shipDestroyed) //if the attack was valid and destroyed a ship
+            m_state = 1;
+        else if (m_lastAttack.validShot && m_lastAttack.shotHit && !m_lastAttack.shipDestroyed) //if the attack was valid and hit but didn't destroy a ship
+        {
+            m_lastAttack.hitP = m_lastAttack.p;
+            m_state = 2;
+        }
+    }
+    else if (m_state == 2)
+    {
+        if (m_lastAttack.validShot && !m_lastAttack.shotHit) //if the attack was valid but missed
+            m_state = 2;
+        else if (m_lastAttack.validShot && m_lastAttack.shotHit && !m_lastAttack.shipDestroyed) //if the attack was valid and destroyed a ship
+            m_state = 2;
+        else if (m_lastAttack.validShot && m_lastAttack.shotHit && m_lastAttack.shipDestroyed) //if the attack was valid and hit but didn't destroy a ship
+        {
+            m_state = 1;
+            return;
+        }
+
+        int counter = 0; //counts how many empty cells in the cross are left
+        for (int r = m_lastAttack.hitP.r - 4; r < m_lastAttack.hitP.r + 5; r++) //check if the entire cross has been attacked
+        {
+            Point p(r, m_lastAttack.hitP.c);
+            if (game().isValid(p) && !attackedBefore(p)) //if the point hasn't been attacked
+                counter++;
+        }
+        for (int c = m_lastAttack.hitP.c - 4; c < m_lastAttack.hitP.c + 5; c++)
+        {
+            Point p(m_lastAttack.hitP.r, c);
+            if (game().isValid(p) && !attackedBefore(p)) //if the point hasn't been attacked
+                counter++;
+        }
+        if (counter == 0)
+            m_state = 1;
+    }
+}
 
 //*********************************************************************
 //  createPlayer

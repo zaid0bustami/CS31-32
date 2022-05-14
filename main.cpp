@@ -82,20 +82,28 @@ int main()
     
     assert(b.allShipsDestroyed() == true);
 
-    Game g2(10, 10);
+    /*Game g2(10, 10);
     addStandardShips(g2);
     Board b22(g2);
-    Player* mediocre = createPlayer("mediocre", "zaid", g2);
+    Player* player = createPlayer("human", "zaid", g2);
     b22.display(false);
-    mediocre->placeShips(b22);
+    player->placeShips(b22);
+    player->recommendAttack();
     b22.display(false);
 
-    delete mediocre;
+    delete player;*/
 
-    //b.display(true);
-    //b.display(false);
+    /*Game g3(3, 3);
+    g3.addShip(2, 'S', "ship");
+    Board b33(g3);
+    Player* player1 = createPlayer("human", "zaid", g3);
+    Player* player2 = createPlayer("mediocre", "jenna", g3);
+    g3.play(player1, player2);
+    delete player1;
+    delete player2;*/
 
-    /*const int NTRIALS = 10;
+    
+    const int NTRIALS = 10;
 
     cout << "Select one of these choices for an example of the game:" << endl;
     cout << "  1.  A mini-game between two mediocre players" << endl;
@@ -159,5 +167,6 @@ int main()
     else
     {
        cout << "That's not one of the choices." << endl;
-    }*/
+    }
+    
 }

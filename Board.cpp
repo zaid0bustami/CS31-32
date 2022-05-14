@@ -175,7 +175,6 @@ void BoardImpl::display(bool shotsOnly) const
         }
         cout << endl;
     }
-    cout << endl;
 }
 
 bool BoardImpl::attack(Point p, bool& shotHit, bool& shipDestroyed, int& shipId)
