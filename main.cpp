@@ -85,7 +85,7 @@ int main()
     /*Game g2(10, 10);
     addStandardShips(g2);
     Board b22(g2);
-    Player* player = createPlayer("human", "zaid", g2);
+    Player* player = createPlayer("good", "zaid", g2);
     b22.display(false);
     player->placeShips(b22);
     player->recommendAttack();
@@ -103,13 +103,13 @@ int main()
     delete player2;*/
 
     
-    const int NTRIALS = 10;
+    const int NTRIALS = 100;
 
     cout << "Select one of these choices for an example of the game:" << endl;
     cout << "  1.  A mini-game between two mediocre players" << endl;
     cout << "  2.  A mediocre player against a human player" << endl;
     cout << "  3.  A " << NTRIALS
-         << "-game match between a mediocre and an awful player, with no pauses"
+         << "-game match between a mediocre and a good player, with no pauses"
          << endl;
     cout << "Enter your choice: ";
     string line;
@@ -149,7 +149,7 @@ int main()
                  << " =============================" << endl;
             Game g(10, 10);
             addStandardShips(g);
-            Player* p1 = createPlayer("awful", "Awful Audrey", g);
+            Player* p1 = createPlayer("good", "Good George", g);
             Player* p2 = createPlayer("mediocre", "Mediocre Mimi", g);
             Player* winner = (k % 2 == 1 ?
                                 g.play(p1, p2, false) : g.play(p2, p1, false));

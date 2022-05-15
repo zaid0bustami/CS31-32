@@ -2,6 +2,7 @@
 #include "Board.h"
 #include "Game.h"
 #include "globals.h"
+#include <queue>
 #include <set>
 #include <iostream>
 #include <string>
@@ -310,9 +311,9 @@ void MediocrePlayer::recordAttackResult(Point p, bool validShot, bool shotHit, b
     {
         if (m_lastAttack.validShot && !m_lastAttack.shotHit) //if the attack was valid but missed
             m_state = 2;
-        else if (m_lastAttack.validShot && m_lastAttack.shotHit && !m_lastAttack.shipDestroyed) //if the attack was valid and destroyed a ship
+        else if (m_lastAttack.validShot && m_lastAttack.shotHit && !m_lastAttack.shipDestroyed) //if the attack was valid and hit but didn't destroy a ship
             m_state = 2;
-        else if (m_lastAttack.validShot && m_lastAttack.shotHit && m_lastAttack.shipDestroyed) //if the attack was valid and hit but didn't destroy a ship
+        else if (m_lastAttack.validShot && m_lastAttack.shotHit && m_lastAttack.shipDestroyed) //if the attack was valid and destroyed a ship
         {
             m_state = 1;
             return;
@@ -350,62 +351,193 @@ public:
     virtual Point recommendAttack();
     virtual void recordAttackResult(Point p, bool validShot, bool shotHit, bool shipDestroyed, int shipId);
     bool attackedBefore(const Point& p);
+    bool spaceShips(Board& b);
 private:
     vector<Point> m_attacks;
     struct lastAttack
     {
         Point p;
-        Point hitP;
         bool validShot = false;
         bool shotHit = false;
         bool shipDestroyed = false;
         int shipId;
     };
+    struct hitInfo
+    {
+        Point hitP;
+        Direction hitDir;
+        bool downOrRight;
+    };
     lastAttack m_lastAttack;
+    queue<hitInfo> m_hitInfo;
+    vector<int> m_shipsLeft;
     int m_state = 1;
 };
 
 GoodPlayer::GoodPlayer(string nm, const Game& g)
     : Player(nm, g)
-{}
+{
+    for (int i = 0; i < game().nShips(); i++)
+    {
+        m_shipsLeft.push_back(game().shipLength(i));
+    }
+}
+
+bool GoodPlayer::spaceShips(Board& b)
+{
+    queue<Point> shipCoords;
+
+    int maxShipLength = 0;
+    for (int i = 0; i < game().nShips(); i++)
+    {
+        if (game().shipLength(i) > maxShipLength)
+            maxShipLength = game().shipLength(i);
+    }
+
+    for (int i = 0; i < game().nShips(); i++)
+    {
+        Point p(0, 0);
+        Direction dir = VERTICAL;
+        if (i == game().nShips() - 1)
+        {
+            p.r = maxShipLength - 1;
+            p.c = game().cols() - game().shipLength(i);
+            dir = HORIZONTAL;
+        }
+        else if (i % 2 == 0)
+        {
+            p.r = 0;
+            p.c = 1 + (i/2 * 5);
+        }
+        else
+        {
+            p.r = game().rows() - game().shipLength(i);
+            p.c = 2 + ((i - 1)/2 * 5);
+        }
+
+        if (b.placeShip(p, i, dir))
+        {
+            shipCoords.push(p);
+        }
+        else
+        {
+            for (int j = 0; j < i; j++)
+            {
+                b.unplaceShip(shipCoords.front(), j, VERTICAL);
+                shipCoords.pop();
+            }
+            return false;
+        }
+    }
+}
 
 bool GoodPlayer::placeShips(Board& b, int shipId)
 {
     if (shipId == game().nShips()) //base case - if all the ships have been placed
         return true;
-    for (int r = 0; r != game().rows(); r++)
+    int i = randInt(4);
+    switch (i)
     {
-        for (int c = 0; c != game().cols(); c++)
+    case 0:
+        for (int r = 0; r != game().rows(); r++)
         {
-            Point p(r, c);
-            if (b.placeShip(p, shipId, VERTICAL))
-                if (placeShips(b, shipId + 1))
-                    return true;
-                else
-                    b.unplaceShip(p, shipId, VERTICAL);
-            if (b.placeShip(p, shipId, HORIZONTAL))
-                if (placeShips(b, shipId + 1))
-                    return true;
-                else
-                    b.unplaceShip(p, shipId, HORIZONTAL);
+            for (int c = 0; c != game().cols(); c++)
+            {
+                Point p(r, c);
+                if (b.placeShip(p, shipId, VERTICAL))
+                    if (placeShips(b, shipId + 1))
+                        return true;
+                    else
+                        b.unplaceShip(p, shipId, VERTICAL);
+                if (b.placeShip(p, shipId, HORIZONTAL))
+                    if (placeShips(b, shipId + 1))
+                        return true;
+                    else
+                        b.unplaceShip(p, shipId, HORIZONTAL);
+            }
         }
+        break;
+    case 1:
+        for (int r = 0; r != game().rows(); r++)
+        {
+            for (int c = game().cols() - 1; c != -1; c--)
+            {
+                Point p(r, c);
+                if (b.placeShip(p, shipId, VERTICAL))
+                    if (placeShips(b, shipId + 1))
+                        return true;
+                    else
+                        b.unplaceShip(p, shipId, VERTICAL);
+                if (b.placeShip(p, shipId, HORIZONTAL))
+                    if (placeShips(b, shipId + 1))
+                        return true;
+                    else
+                        b.unplaceShip(p, shipId, HORIZONTAL);
+            }
+        }
+        break;
+    case 2:
+        for (int r = game().rows() - 1; r != -1; r--)
+        {
+            for (int c = 0; c != game().cols(); c++)
+            {
+                Point p(r, c);
+                if (b.placeShip(p, shipId, VERTICAL))
+                    if (placeShips(b, shipId + 1))
+                        return true;
+                    else
+                        b.unplaceShip(p, shipId, VERTICAL);
+                if (b.placeShip(p, shipId, HORIZONTAL))
+                    if (placeShips(b, shipId + 1))
+                        return true;
+                    else
+                        b.unplaceShip(p, shipId, HORIZONTAL);
+            }
+        }
+        break;
+    case 3:
+        for (int r = game().rows(); r != -1; r--)
+        {
+            for (int c = game().cols(); c != -1; c--)
+            {
+                Point p(r, c);
+                if (b.placeShip(p, shipId, VERTICAL))
+                    if (placeShips(b, shipId + 1))
+                        return true;
+                    else
+                        b.unplaceShip(p, shipId, VERTICAL);
+                if (b.placeShip(p, shipId, HORIZONTAL))
+                    if (placeShips(b, shipId + 1))
+                        return true;
+                    else
+                        b.unplaceShip(p, shipId, HORIZONTAL);
+            }
+        }
+        break;
+    default:
+        break;
     }
     return false;
 }
 
 bool GoodPlayer::placeShips(Board& b)
 {
-    b.block();
-    for (int i = 0; i < 50; i++)
+    if (spaceShips(b))
+        return true;
+    else
     {
-        if (placeShips(b, 0))
+        b.block();
+        for (int i = 0; i < 50; i++)
         {
-            b.unblock();
-            return true;
+            if (placeShips(b, 0))
+            {
+                b.unblock();
+                return true;
+            }
         }
+        b.unblock();
+        return false;
     }
-    b.unblock();
-    return false;
 }
 
 void GoodPlayer::recordAttackByOpponent(Point p)
@@ -427,24 +559,87 @@ Point GoodPlayer::recommendAttack()
 {
     for (;;)
     {
-        while (m_state == 1)
+        while (m_state == 1) //hit a random point in a checkerboard
         {
-            Point p = game().randomPoint();
+            Board b(game());
+            for (int count = 0; count < 100; count++)
+            {
+                int r, c;
+                int i = randInt(2);
+                if (i == 0) //even
+                {
+                    r = 2 * randInt(game().rows() / 4); //ensures the top half is hit
+                    c = 2 * randInt(game().cols() / 2);
+                }
+                else //odd
+                {
+                    r = 2 * randInt(game().rows() / 4) + 1;
+                    c = 2 * randInt(game().cols() / 2) + 1;
+                }
+                //r -= 2 * randInt(r / 2); //increases liklihood of attacking a cell in the upper half
+                Point p(r, c);
+                if (!attackedBefore(p)) //test that the point hasn't been attacked before
+                {
+                    m_attacks.push_back(p);
+                    return p;
+                }                
+            }
+            for (;;)
+            {
+                Point p = game().randomPoint(); //revert to random points if shots in between needed
+                if (!attackedBefore(p)) //test that the point hasn't been attacked before
+                {
+                    m_attacks.push_back(p);
+                    return p;
+                }
+            }
+            /*Point p = game().randomPoint();
+            p.r -= randInt(p.r + 1); //increases liklihood of attacking a cell in the upper half
             if (!attackedBefore(p)) //test that the point hasn't been attacked before
                 m_attacks.push_back(p);
             else
                 continue;
-            return p;
+            return p;*/
         }
-        while (m_state == 2)
+        while (m_state == 2) //figure out the direction of the ship hit
         {
-            int r = m_lastAttack.hitP.r;
-            int c = m_lastAttack.hitP.c;
+            int r = m_hitInfo.front().hitP.r;
+            int c = m_hitInfo.front().hitP.c;
+            
+            
+            int counter = 0; //if all four cells directly touching the center of attack have been attacked, revert to state 1
+            for (int i = -1; i < 2; i += 2)
+            {
+                Point p(m_hitInfo.front().hitP.r, m_hitInfo.front().hitP.c + i);
+                if (game().isValid(p) && !attackedBefore(p))
+                    counter++;
+            }
+            for (int i = -1; i < 2; i += 2)
+            {
+                Point p(m_hitInfo.front().hitP.r + i, m_hitInfo.front().hitP.c);
+                if (game().isValid(p) && !attackedBefore(p))
+                    counter++;
+            }
+            if (counter == 0)
+            {
+                m_hitInfo.pop();
+                m_state = 1;
+                break;
+            }
+            
+            
+            
             int d = randInt(2);
             if (d == 0)
-                c = (m_lastAttack.hitP.c - 4) + randInt(9);
+            {
+                c = (m_hitInfo.front().hitP.c - 1) + randInt(3);
+                m_hitInfo.front().hitDir = HORIZONTAL;
+            }
             else
-                r = (m_lastAttack.hitP.r - 4) + randInt(9);
+            {
+                r = (m_hitInfo.front().hitP.r - 1) + randInt(3);
+                m_hitInfo.front().hitDir = VERTICAL;
+            }
             Point p(r, c);
             if (game().isValid(p) && !attackedBefore(p)) //test the point's valid and it hasn't been attacked before
                 m_attacks.push_back(p);
@@ -452,16 +647,71 @@ Point GoodPlayer::recommendAttack()
                 continue;
             return p;
         }
+        while (m_state == 3) //destroy the ship from both sides
+        {
+            int r = m_hitInfo.front().hitP.r;
+            int c = m_hitInfo.front().hitP.c;
+            Point p(r, c);
+            for (int n = 1; n < 5; n++)
+            {
+                for (int i = -1; i < 2; i += 2)
+                {
+                    if (i == 1)
+                        m_hitInfo.front().downOrRight = true;
+                    else
+                        m_hitInfo.front().downOrRight = false;
+
+                    if (m_hitInfo.front().hitDir == HORIZONTAL)
+                        p.c = m_hitInfo.front().hitP.c + (i * n);
+                    else
+                        p.r = m_hitInfo.front().hitP.r + (i * n);
+
+                    if (game().isValid(p) && !attackedBefore(p)) //test the point's valid and it hasn't been attacked before
+                    {
+                        m_attacks.push_back(p);
+                        return p;
+                    }
+                }
+            }
+        }
+        while (m_state == 4) //destroy the ship from one side
+        {
+            int r = m_hitInfo.front().hitP.r;
+            int c = m_hitInfo.front().hitP.c;
+            int i = 1;
+            Point p(r, c);
+            if (m_hitInfo.front().downOrRight == true)
+                i = 1;
+            else
+                i = -1;
+            for (int n = 1; n < 5; n++)
+            {
+                if (m_hitInfo.front().hitDir == HORIZONTAL)
+                    p.c = m_hitInfo.front().hitP.c + (i * n);
+                else
+                    p.r = m_hitInfo.front().hitP.r + (i * n);
+                if (game().isValid(p) && !attackedBefore(p)) //test the point's valid and it hasn't been attacked before
+                {
+                    m_attacks.push_back(p);
+                    return p;
+                }
+            }
+            m_state = 2; //if the player dead ends they should revert to state 2
+        }
     }
 }
 
 void GoodPlayer::recordAttackResult(Point p, bool validShot, bool shotHit, bool shipDestroyed, int shipId)
 {
+    Point lastLastAttack = m_lastAttack.p;
+
     m_lastAttack.p = p;
     m_lastAttack.validShot = validShot;
     m_lastAttack.shotHit = shotHit;
     m_lastAttack.shipDestroyed = shipDestroyed;
     m_lastAttack.shipId = shipId;
+
+    hitInfo h;
 
     if (m_state == 1)
     {
@@ -471,7 +721,8 @@ void GoodPlayer::recordAttackResult(Point p, bool validShot, bool shotHit, bool 
             m_state = 1;
         else if (m_lastAttack.validShot && m_lastAttack.shotHit && !m_lastAttack.shipDestroyed) //if the attack was valid and hit but didn't destroy a ship
         {
-            m_lastAttack.hitP = m_lastAttack.p;
+            h.hitP = p;
+            m_hitInfo.push(h);
             m_state = 2;
         }
     }
@@ -479,29 +730,59 @@ void GoodPlayer::recordAttackResult(Point p, bool validShot, bool shotHit, bool 
     {
         if (m_lastAttack.validShot && !m_lastAttack.shotHit) //if the attack was valid but missed
             m_state = 2;
-        else if (m_lastAttack.validShot && m_lastAttack.shotHit && !m_lastAttack.shipDestroyed) //if the attack was valid and destroyed a ship
+        else if (m_lastAttack.validShot && m_lastAttack.shotHit && !m_lastAttack.shipDestroyed) //if the attack was valid and hit but didn't destroy a ship
+            m_state = 3;
+        else if (m_lastAttack.validShot && m_lastAttack.shotHit && m_lastAttack.shipDestroyed) //if the attack was valid and destroyed a ship
+        {
+            if(!m_hitInfo.empty())
+                m_hitInfo.pop();
+            if (!m_hitInfo.empty())
+                m_state = 2;
+            else
+                m_state = 1;
+        }
+    }
+    else if (m_state == 3)
+    {
+        if (m_lastAttack.validShot && !m_lastAttack.shotHit) //if the attack was valid but missed
+        {
+            if (m_hitInfo.front().downOrRight == true) //needs to be flipped because the missed shot represents where the ship is NOT
+                m_hitInfo.front().downOrRight = false;
+            else
+                m_hitInfo.front().downOrRight = true;
+            h.hitP = lastLastAttack; //in case this represents an intersection of ships
+            m_hitInfo.push(h);
+            m_state = 4;
+        }
+        else if (m_lastAttack.validShot && m_lastAttack.shotHit && !m_lastAttack.shipDestroyed) //if the attack was valid and hit but didn't destroy a ship
+            m_state = 3;
+        else if (m_lastAttack.validShot && m_lastAttack.shotHit && m_lastAttack.shipDestroyed) //if the attack was valid and and destroyed a ship
+        {
+            if (!m_hitInfo.empty())
+                m_hitInfo.pop();
+            if (!m_hitInfo.empty())
+                m_state = 2;
+            else
+                m_state = 1;
+        }
+    }
+    else if (m_state == 4)
+    {
+        if (m_lastAttack.validShot && !m_lastAttack.shotHit) //if the attack was valid but missed
+        {
             m_state = 2;
-        else if (m_lastAttack.validShot && m_lastAttack.shotHit && m_lastAttack.shipDestroyed) //if the attack was valid and hit but didn't destroy a ship
-        {
-            m_state = 1;
-            return;
         }
-
-        int counter = 0; //counts how many empty cells in the cross are left
-        for (int r = m_lastAttack.hitP.r - 4; r < m_lastAttack.hitP.r + 5; r++) //check if the entire cross has been attacked
+        else if (m_lastAttack.validShot && m_lastAttack.shotHit && !m_lastAttack.shipDestroyed) //if the attack was valid and hit but didn't destroy a ship
+            m_state = 4;
+        else if (m_lastAttack.validShot && m_lastAttack.shotHit && m_lastAttack.shipDestroyed) //if the attack was valid and and destroyed a ship
         {
-            Point p(r, m_lastAttack.hitP.c);
-            if (game().isValid(p) && !attackedBefore(p)) //if the point hasn't been attacked
-                counter++;
+            if (!m_hitInfo.empty())
+                m_hitInfo.pop();
+            if (!m_hitInfo.empty())
+                m_state = 2; 
+            else
+                m_state = 1;
         }
-        for (int c = m_lastAttack.hitP.c - 4; c < m_lastAttack.hitP.c + 5; c++)
-        {
-            Point p(m_lastAttack.hitP.r, c);
-            if (game().isValid(p) && !attackedBefore(p)) //if the point hasn't been attacked
-                counter++;
-        }
-        if (counter == 0)
-            m_state = 1;
     }
 }
 
