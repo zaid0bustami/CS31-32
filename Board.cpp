@@ -199,12 +199,9 @@ bool BoardImpl::attack(Point p, bool& shotHit, bool& shipDestroyed, int& shipId)
             {
                 if (m_game.shipSymbol(id) == symbol)
                 {
-                    shipId = id;
                     break;
                 }
             }
-            int length = m_game.shipLength(id);
-
             //find out if the ship was destroyed
             bool b = true;
             for (int r = 0; r != m_game.rows(); r++)
@@ -212,6 +209,9 @@ bool BoardImpl::attack(Point p, bool& shotHit, bool& shipDestroyed, int& shipId)
                     if (m_board[r][c] == symbol)
                         b = false;
             shipDestroyed = b;
+
+            if(shipDestroyed)
+                shipId = id;
         }
         return true;
     }

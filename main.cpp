@@ -70,12 +70,12 @@ int main()
     
     assert(b.allShipsDestroyed() == false);
 
-    assert(b.attack(p1, b1, b2, i) == true && b1 == true && b2 == false && i == 1);
+    assert(b.attack(p1, b1, b2, i) == true && b1 == true && b2 == false && i == 0);
     p1.c++;
-    assert(b.attack(p1, b1, b2, i) == true && b1 == true && b2 == false && i == 1);
+    assert(b.attack(p1, b1, b2, i) == true && b1 == true && b2 == false && i == 0);
     p1.c++;
 
-    assert(b.attack(p1, b1, b2, i) == true && b1 == true && b2 == false && i == 1);
+    assert(b.attack(p1, b1, b2, i) == true && b1 == true && b2 == false && i == 0);
     p1.c++;
     assert(b.attack(p1, b1, b2, i) == true && b1 == true && b2 == true && i == 1);
     p1.c++;
