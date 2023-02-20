@@ -1,0 +1,3 @@
+﻿  NameTable.cpp
+C:\Users\zaid0\source\repos\proj5\proj5\NameTable.cpp(23,24): warning C4267: 'return': conversion from 'size_t' to 'int', possible loss of data
+  proj5.vcxproj -> C:\Users\zaid0\source\repos\proj5\x64\Debug\proj5.exe

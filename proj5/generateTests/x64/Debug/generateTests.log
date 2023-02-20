@@ -1,0 +1,4 @@
+﻿  generateTests.cpp
+C:\Users\zaid0\source\repos\proj5\proj5\generateTests.cpp(101,43): warning C4267: 'argument': conversion from 'size_t' to 'int', possible loss of data
+C:\Users\zaid0\source\repos\proj5\proj5\generateTests.cpp(103,43): warning C4267: 'argument': conversion from 'size_t' to 'int', possible loss of data
+  generateTests.vcxproj -> C:\Users\zaid0\source\repos\proj5\x64\Debug\generateTests.exe
