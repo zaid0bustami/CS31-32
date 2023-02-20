@@ -1021,7 +1021,7 @@ void GoodPlayer::recordAttackResult(Point p, bool validShot, bool shotHit, bool 
         }
         else if (m_lastAttack.validShot && m_lastAttack.shotHit && !m_lastAttack.shipDestroyed) //if the attack was valid and hit but didn't destroy a ship
         {
-            m_state = 4;
+            m_state = 3;
         }
         else if (m_lastAttack.validShot && m_lastAttack.shotHit && m_lastAttack.shipDestroyed) //if the attack was valid and and destroyed a ship
         {
